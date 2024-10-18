@@ -48,10 +48,12 @@ export default {
   },
   methods: {
     async play() {
+      await CapacitorVideoPlayer.stopAllPlayers()
       await CapacitorVideoPlayer.initPlayer({
         mode: "fullscreen",
         url: this.src,
-        playerId: "player"
+        playerId: "player",
+        pipEnabled: false,
       })
       CapacitorVideoPlayer.play({ playerId: "player" })
     },

@@ -9,10 +9,10 @@
 <script lang="ts">
 import { SplashScreen } from '@capacitor/splash-screen';
 import { RouterView } from 'vue-router'
-import { createDir, listen, readDir } from './services/capacitor/filesystem';
 import { useAppStore } from './stores/app';
 import { getPrefence } from './services/capacitor/preferences';
-import { initializeAdMob, showAdMobBanner } from './services/capacitor/Admob';
+import { initializeAdMob, showAdMobBanner } from './services/capacitor/admob';
+import { backButtonListener, exit } from './services/capacitor/app';
 export default {
   components: {
     RouterView
@@ -41,6 +41,11 @@ export default {
     }
   },
   async mounted() {
+    backButtonListener(() => {
+      if (history.length != 1) this.$router.go(-1)
+      else exit()
+    })
+
     await this.loadTheme()
     this.hideSplash()
     this.loadBanner()

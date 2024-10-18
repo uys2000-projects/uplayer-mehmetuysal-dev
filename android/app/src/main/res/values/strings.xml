@@ -2,8 +2,7 @@
 <resources>
     <string name="app_name">UPlayer</string>
     <string name="title_activity_main">UPlayer</string>
-    <string name="package_name">com.uys2000.UPlayer</string>
-    <string name="custom_url_scheme">com.uys2000.UPlayer</string>
+    <string name="package_name">com.uys2000.uplayer</string>
+    <string name="custom_url_scheme">com.uys2000.uplayer</string>
     <string name="admob_app_id">ca-app-pub-6530204715466484~2201709893</string>
-
 </resources>

@@ -5,7 +5,7 @@ export const usePlaylistStore = defineStore("playlist", {
   state() {
     return {
       name: "",
-      group: "",
+      group: "all",
       playlist: [] as UPlayListItem[],
     };
   },

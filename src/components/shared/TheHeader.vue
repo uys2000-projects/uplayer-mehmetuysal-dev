@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-neutral text-neutral-content flex justify-between items-center p-4 z-10 h-20">
+  <header class="bg-neutral text-neutral-content flex justify-between items-center p-4 z-10 h-20 wide:py-0 wide:h-12">
     <div>
       <label for="drawer" aria-label="open sidebar" class="btn btn-square btn-ghost lg:hidden">
         <span class="material-symbols-outlined">

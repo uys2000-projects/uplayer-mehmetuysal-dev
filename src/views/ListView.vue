@@ -1,15 +1,20 @@
 <template>
   <div class="flex flex-col gap-4 p-4 h-full w-full overflow-hidden" :class="{ 'pb-12': appStore.adLoaded }">
-    <label class="input input-bordered flex items-center gap-2 flex-shrink-0">
-      Name:
-      <input type="text" class="grow" v-model="searchName" @change="() => onFilterChange()" />
-    </label>
-    <label class="input input-bordered flex items-center gap-2 flex-shrink-0">
-      Group:
-      <input type="text" class="grow" v-model="searchGroup" @change="() => onFilterChange()" />
-    </label>
+    <div class="flex flex-col gap-4 wide:flex-nowrap wide:flex-row">
+      <label class="input input-bordered flex items-center gap-2 flex-shrink-0 wide:flex-shrink">
+        Name:
+        <input type="text" class="grow" v-model="searchName" @input="() => onFilterChange()" />
+      </label>
+      <select class="select select-bordered w-full flex-shrink-0 wide:flex-shrink" placeholder="Select Group"
+        v-model="searchGroup" @change="() => onFilterChange()">
+        <option value="all" selected>All Groups</option>
+        <template v-for="group in groups">
+          <option :value="group">{{ group }}</option>
+        </template>
+      </select>
+    </div>
     <div id="scrollArea" class="h-full w-full flex-shrink overflow-auto">
-      <div id="contentArea" class="flex overflow-hidden h-max w-full justify-center flex-wrap gap-4">
+      <div id="contentArea" class="flex flex-wrap justify-center gap-4">
         <div class="clusterize-no-data">
           <template v-if="!notFound">
             <span class="loading loading-infinity loading-lg"></span>
@@ -35,7 +40,7 @@ export default {
   data() {
     return {
       searchName: "",
-      searchGroup: "",
+      searchGroup: "all",
       timer: 0,
       active: "",
       index: 0,
@@ -101,12 +106,13 @@ export default {
     },
     getRow(item: UPlayListItem, index: number) {
       return `
-      <div class="item bg-neutral cursor-pointer relative flex flex-col">
-        <img class="w-36 lg:w-52 min-h-8 h-auto m-auto" src="${item.img ? item.img : "/images/404.jpeg"}" alt=""
+      <div class="item bg-neutral cursor-pointer relative flex flex-col w-36 lg:w-52 h-60 lg:80">
+        <div class="w-36 lg:w-52 h-60 lg:80 flex">
+          <img class="w-full h-auto m-auto" src="${item.img ? item.img : "/images/404.jpeg"}" alt=""
           loading="lazy">
+        </div>
         <div
-          class="absolute glass w-full h-full top-0 left-0 opacity-0 flex flex-col justify-center items-center text-white"
-          class="${item.img ? "opacity-100" : ""}">
+          class="absolute glass w-full h-full top-0 left-0 flex flex-col justify-center items-center text-white ${item.img ? "opacity-0" : "opacity-100"}">
           <div id="target" data-index="${index}" class="text-neutral px-1 flex flex-col justify-center" tabindex="0" data-index="${item.line}">
             <span class="m-auto">${item.name}</span>
             <div class="flex gap-4 m-auto">
@@ -119,10 +125,10 @@ export default {
     },
     async onFilterChange() {
       if (this.timer) clearTimeout(this.timer);
-      setTimeout(async () => {
+      this.timer = setTimeout(async () => {
         const filter = (item: UPlayListItem) => {
-          if (item.group.toLocaleLowerCase().includes(this.searchGroup) &&
-            item.name.toLocaleLowerCase().includes(this.searchName))
+          if ((this.searchGroup == "all" || this.searchGroup == item.group) &&
+            item.name.toLocaleLowerCase().includes(this.searchName.toLocaleLowerCase()))
             return item
         }
         const hasName = this.searchGroup.trim() != ""
@@ -136,6 +142,10 @@ export default {
     },
   },
   computed: {
+    groups() {
+      const groups = [... new Set(this.playlistStore.playlist.map(i => i.group))]
+      return groups
+    },
     name() {
       return this.playlist[this.index]?.name || ''
     },

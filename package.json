@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "run-p type-check \"build-only {@}\" --",
+    "build": "yarn build-only",
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force"
@@ -27,7 +27,8 @@
     "sqids": "^0.3.0",
     "u-logger": "https://github.com/uys2000-projects/ULogger",
     "vue": "^3.4.29",
-    "vue-router": "^4.3.3"
+    "vue-router": "^4.3.3",
+    "vue-virtual-scroller": "^2.0.0-beta.8"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

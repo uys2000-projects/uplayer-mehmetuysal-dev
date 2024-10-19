@@ -13,131 +13,106 @@
         </template>
       </select>
     </div>
-    <div id="scrollArea" class="h-full w-full flex-shrink overflow-auto">
-      <div id="contentArea" class="flex flex-wrap justify-center gap-4">
-        <div class="clusterize-no-data">
-          <template v-if="!notFound">
-            <span class="loading loading-infinity loading-lg"></span>
-          </template>
-          <template v-else>
-            Not Found
-          </template>
+    <RecycleScroller class="scroller" :items="playlist" :item-size="96" key-field="line" v-slot="{ item }">
+      <div class="h-[96px] p-1 overflow-hidden">
+        <div class="h-full flex items-center gap-4 overflow-hidden border border-neutral rounded-box">
+          <div class="h-full w-24 flex overflow-hidden relative flex-shrink-0">
+            <template v-if="item.img">
+              <img class="h-full w-auto m-auto cursor-pointer" :src="item.img" alt="" :key="item.line" loading="lazy"
+                @click="() => openImage(item.img)">
+            </template>
+            <template v-else>
+              <img class="h-full w-auto m-auto" src="/images/404.jpeg" alt="" :key="item.line" loading="lazy">
+            </template>
+          </div>
+          <div>
+            {{ item.name }}
+          </div>
+          <div class="ml-auto">
+            <a class="material-symbols-outlined cursor-pointer select-none" :href="item.url" target="_BLANK">
+              download
+            </a>
+          </div>
+          <div class="mr-4">
+            <span class="material-symbols-outlined cursor-pointer select-none" @click="() => play(item.url)">
+              play_arrow
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+    </RecycleScroller>
+
+    <dialog id="modal" class="modal">
+      <div class="modal-box">
+        <img :src="image" alt="">
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
 <script lang="ts">
-import { filterBatcher, mapBatcher } from "@/services/batcher";
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
+import { filterBatcher } from "@/services/batcher";
 import { readFileObject } from "@/services/capacitor/filesystem";
 import { useAppStore } from "@/stores/app";
 import { usePlaylistStore } from "@/stores/playlist";
 import type { UPlayListItem } from "@/types/playlist";
 import { CapacitorVideoPlayer } from "capacitor-video-player";
-import Clusterize from "clusterize.js";
+import { RecycleScroller } from 'vue-virtual-scroller'
+
 export default {
+  components: { RecycleScroller },
   data() {
     return {
       searchName: "",
       searchGroup: "all",
       timer: 0,
-      active: "",
-      index: 0,
       notFound: false,
       appStore: useAppStore(),
       playlistStore: usePlaylistStore(),
-      clusterize: null as null | Clusterize,
-      playlist: [] as UPlayListItem[]
+      playlist: [] as UPlayListItem[],
+      image: ""
     };
   },
   methods: {
-    async play() {
+    openImage(image: string) {
+      this.image = image
+      const dialog = document.querySelector("#modal") as HTMLDialogElement
+      dialog.show()
+    },
+    async play(src: string) {
       await CapacitorVideoPlayer.stopAllPlayers()
       await CapacitorVideoPlayer.initPlayer({
         mode: "fullscreen",
-        url: this.src,
+        url: src,
         playerId: "player",
         pipEnabled: false,
       })
       CapacitorVideoPlayer.play({ playerId: "player" })
     },
-    createClusterize(data: string[]) {
-      this.clusterize = new Clusterize({
-        rows: data,
-        scrollId: "scrollArea",
-        contentId: "contentArea",
-        callbacks: {
-          clusterChanged: () => {
-            const items = document.querySelectorAll("#target") as NodeListOf<HTMLDivElement>;
-            items.forEach((item) => {
-              item.addEventListener("click", () => {
-                this.index = Number.parseInt(item.dataset.index as string)
-                const watch = item.querySelector(".watch") as HTMLSpanElement
-                watch.onclick = () => {
-                  if (this.active == index) this.play()
-                }
-                const i = document.activeElement as HTMLDivElement
-                const index = i.dataset.index as string
-                if (this.active != index) {
-                  this.active = index;
-                }
-              });
-            });
-          },
-        },
-      });
-    },
-    async loadClusterize() {
-      this.playlist = this.playlistStore.playlist
-      var data = await mapBatcher(this.playlistStore.playlist, this.getRow)
-      if (this.clusterize) this.clusterize.append(data);
-      else this.createClusterize(data)
-      this.onFilterChange();
-    },
     async loadPlaylist() {
       const playlist = (await readFileObject
         .uLog("playlist")
         .catch(() => undefined)) as UPlayListItem[] | undefined;
-      if (playlist) {
-        this.playlistStore.playlist = playlist;
-        this.loadClusterize();
-      } else this.notFound = true;
-    },
-    getRow(item: UPlayListItem, index: number) {
-      return `
-      <div class="item bg-neutral cursor-pointer relative flex flex-col w-36 lg:w-52 h-60 lg:80">
-        <div class="w-36 lg:w-52 h-60 lg:80 flex">
-          <img class="w-full h-auto m-auto" src="${item.img ? item.img : "/images/404.jpeg"}" alt=""
-          loading="lazy">
-        </div>
-        <div
-          class="absolute glass w-full h-full top-0 left-0 flex flex-col justify-center items-center text-white ${item.img ? "opacity-0" : "opacity-100"}">
-          <div id="target" data-index="${index}" class="text-neutral px-1 flex flex-col justify-center" tabindex="0" data-index="${item.line}">
-            <span class="m-auto">${item.name}</span>
-            <div class="flex gap-4 m-auto">
-              <a href="${item.url}" target="_BLANK" class="material-symbols-outlined pt-1 py-4 download">download</a>
-              <span class="material-symbols-outlined pt-1 py-4 watch">play_arrow</span>
-            </div>
-          </div>
-        </div>
-      </div>`;
+      if (!playlist) return this.notFound = true;
+      this.playlistStore.playlist = playlist;
+      this.playlist = this.playlistStore.playlist
     },
     async onFilterChange() {
       if (this.timer) clearTimeout(this.timer);
-      this.timer = setTimeout(async () => {
-        const filter = (item: UPlayListItem) => {
-          if ((this.searchGroup == "all" || this.searchGroup == item.group) &&
-            item.name.toLocaleLowerCase().includes(this.searchName.toLocaleLowerCase()))
-            return item
+      setTimeout(async () => {
+        if (this.searchGroup.trim() != "" || this.searchName.trim() != "") {
+          this.playlist = await filterBatcher(this.playlistStore.playlist, item => {
+            const isAll = this.searchGroup == "all"
+            const isSelectedGroup = this.searchGroup == item.group
+            const isSearchNameIncluded = item.name.toLocaleLowerCase().includes(this.searchName.toLocaleLowerCase())
+            if ((isAll || isSelectedGroup) && isSearchNameIncluded) return item
+            return undefined
+          })
         }
-        const hasName = this.searchGroup.trim() != ""
-        const hasGroup = this.searchName.trim() != ""
-        if (this.clusterize && (hasName || hasGroup)) {
-          this.playlist = await filterBatcher(this.playlistStore.playlist, filter)
-          this.clusterize.update(await mapBatcher(this.playlist, this.getRow));
-        }
-        else if (this.clusterize) this.clusterize.update(await mapBatcher(this.playlistStore.playlist, this.getRow));
       }, 1000);
     },
   },
@@ -146,23 +121,17 @@ export default {
       const groups = [... new Set(this.playlistStore.playlist.map(i => i.group))]
       return groups
     },
-    name() {
-      return this.playlist[this.index]?.name || ''
-    },
-    src() {
-      return this.playlist[this.index]?.url || ''
-    }
   },
   mounted() {
     this.searchName = this.playlistStore.name
     this.searchGroup = this.playlistStore.group
     if (this.playlistStore.playlist.length == 0) this.loadPlaylist();
-    else this.loadClusterize();
+    else this.playlist = this.playlistStore.playlist
+    this.onFilterChange()
   },
   beforeUnmount() {
     this.playlistStore.name = this.searchName
     this.playlistStore.group = this.searchGroup
-    if (this.clusterize) this.clusterize.clear();
   },
 };
 </script>

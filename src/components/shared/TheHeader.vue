@@ -8,6 +8,10 @@
       </label>
     </div>
     <div class="flex gap-2 h-8 w-max">
+      <div v-if="appStore.downloading" class="radial-progress bg-primary text-primary-content border-primary"
+        :style="`--value:${appStore.progress}; --size:2rem;`" role="progressbar">
+        <span class="text-xs">{{ appStore.progress }}%</span>
+      </div>
       <ThemeBtn />
     </div>
   </header>
@@ -16,9 +20,15 @@
 <script lang="ts">
 import { RouterLink } from 'vue-router';
 import ThemeBtn from '../daisy/ThemeBtn.vue';
+import { useAppStore } from '@/stores/app';
 
 export default {
   components: { RouterLink, ThemeBtn },
 
+  data() {
+    return {
+      appStore: useAppStore(),
+    }
+  },
 }
 </script>

@@ -5,6 +5,15 @@ import {
   type ProgressStatus,
 } from "@capacitor/filesystem";
 
+export const checkPermissions = async () => {
+  const { publicStorage } = await Filesystem.checkPermissions();
+  return publicStorage != "denied";
+};
+export const requestPermissions = async () => {
+  const { publicStorage } = await Filesystem.requestPermissions();
+  return publicStorage != "denied";
+};
+
 export const createDir = async (path: string) => {
   await Filesystem.mkdir({
     path: path,
@@ -82,12 +91,16 @@ export const downloadFile = async (url: string, path: string) => {
     method: "get",
     url: url,
     path: path,
-    directory: Directory.Data,
+    directory: Directory.Documents,
     progress: true,
     recursive: true,
   });
 };
 
 export const listen = async (callback: (progress: ProgressStatus) => void) => {
-  Filesystem.addListener("progress", callback);
+  return Filesystem.addListener("progress", callback);
+};
+
+export const removeListeners = async () => {
+  return Filesystem.removeAllListeners();
 };

@@ -25,15 +25,17 @@
               <img class="h-full w-auto m-auto" src="/images/404.jpeg" alt="" :key="item.line" loading="lazy">
             </template>
           </div>
-          <div>
+          <div class="break-words w-full flex-shrink overflow-hidden">
             {{ item.name }}
           </div>
-          <div class="ml-auto">
+          <div class="mr-2 flex gap-1">
+            <span v-if="!isChannelUrl(item.url)" class="material-symbols-outlined cursor-pointer select-none"
+              @click="() => addDownloadQueue(item)">
+              output_circle
+            </span>
             <a class="material-symbols-outlined cursor-pointer select-none" :href="item.url" target="_BLANK">
               download
             </a>
-          </div>
-          <div class="mr-4">
             <span class="material-symbols-outlined cursor-pointer select-none" @click="() => play(item.url)">
               play_arrow
             </span>
@@ -78,6 +80,9 @@ export default {
     };
   },
   methods: {
+    isChannelUrl(url: string) {
+      return url.search(/[.][^.\/]*$/) == -1;
+    },
     openImage(image: string) {
       this.image = image
       const dialog = document.querySelector("#modal") as HTMLDialogElement
@@ -115,6 +120,14 @@ export default {
         }
       }, 1000);
     },
+    addDownloadQueue(item: UPlayListItem) {
+      // set downloadQueue with concat to catch change on AppVue file
+      if (!this.appStore.downloadQueue.find(i => i.url == item.url)) {
+        this.appStore.toast = "info"
+        this.appStore.toastLabel = `${item.name} added to queue.`
+        this.appStore.downloadQueue = this.appStore.downloadQueue.concat([item])
+      }
+    }
   },
   computed: {
     groups() {

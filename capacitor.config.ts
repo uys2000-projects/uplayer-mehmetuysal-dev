@@ -16,10 +16,10 @@ const config: CapacitorConfig = {
     loggingBehavior: "production",
     allowMixedContent: true,
   },
-  //server: {
-  //  url: "http://192.168.1.160:5173/",
-  //  cleartext: true,
-  //},
+  server: {
+    url: "http://192.168.1.160:5173/",
+    cleartext: true,
+  },
 };
 
 export default config;

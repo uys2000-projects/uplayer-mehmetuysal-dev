@@ -30,13 +30,41 @@
               <button class="btn join-item" @click="deleteAccessCode">Remove</button>
             </div>
           </div>
+          <div class="flex justify-between">
+            <button class="btn w-full" @click="showModal">
+              Downloads
+              {{ appStore.downloadQueue.length + (appStore.downloading ? 1 : 0) }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
+    <Modal ref="modal" id="modal">
+      <div class="flex flex-col overflow-auto p-4 pt-10 gap-1">
+        <template v-if="appStore.downloading">
+          <div class="h-8 flex justify-between">
+            <span>{{ appStore.downloading.name }}</span>
+            <div class="radial-progress bg-primary text-primary-content border-primary"
+              :style="`--value:${appStore.progress}; --size:2rem;`" role="progressbar">
+              <span class="text-xs">{{ appStore.progress }}%</span>
+            </div>
+          </div>
+        </template>
+        <template v-for="item in appStore.downloadQueue">
+          <div class="h-8 flex justify-between">
+            <span>{{ item.name }}</span>
+            <span class="material-symbols-outlined text-error mx-1" @click="() => removeFromQueue(item)">
+              delete
+            </span>
+          </div>
+        </template>
+      </div>
+    </Modal>
   </div>
 </template>
 
 <script lang="ts">
+import Modal from '@/components/daisy/Modal.vue';
 import { ACCESSCODE, PLAYLIST } from '@/constant';
 import { deleteFile, writeFileObject } from '@/services/capacitor/filesystem';
 import { get } from '@/services/capacitor/http';
@@ -49,15 +77,23 @@ import { usePlaylistStore } from '@/stores/playlist';
 import type { UPlayListItem } from '@/types/playlist';
 
 export default {
+  components: { Modal },
   data() {
     return {
       url: "",
       code: "",
       playlistStore: usePlaylistStore(),
-      appStore: useAppStore()
+      appStore: useAppStore(),
     }
   },
   methods: {
+    showModal() {
+      const modal = this.$refs.modal as typeof Modal
+      modal.show()
+    },
+    removeFromQueue(item: UPlayListItem) {
+      this.appStore.downloadQueue = this.appStore.downloadQueue.filter(i => i.url != item.url)
+    },
     async getIndex() {
       let index = 0;
       const indexDoc = await getDocument(ACCESSCODE, "-index")
@@ -102,10 +138,9 @@ export default {
   },
   async beforeMount() {
     const [url, code] = await Promise.all([getPrefence.uLog("url"), getPrefence.uLog("code")])
-    console.log(url, code)
     this.url = url || ""
     this.code = code || ""
-  }
+  },
 }
 </script>
 

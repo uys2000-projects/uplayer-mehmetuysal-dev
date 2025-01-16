@@ -61,6 +61,15 @@ export const writeFileObject = async (path: string, data: object) => {
   return writeFileResult.uri;
 };
 
+export const appendFileObject = async (path: string, data: object) => {
+  await Filesystem.appendFile({
+    path: path,
+    data: JSON.stringify(data),
+    directory: Directory.Data,
+    encoding: Encoding.UTF8,
+  });
+  return true;
+};
 export const readFile = async (path: string) => {
   const readFileResult = await Filesystem.readFile({
     path: path,

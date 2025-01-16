@@ -66,11 +66,12 @@
 <script lang="ts">
 import Modal from '@/components/daisy/Modal.vue';
 import { ACCESSCODE, PLAYLIST } from '@/constant';
-import { deleteFile, writeFileObject } from '@/services/capacitor/filesystem';
+import { appendFileObject, deleteFile, writeFileObject } from '@/services/capacitor/filesystem';
 import { get } from '@/services/capacitor/http';
 import { getPrefence, removePrefence, setPrefence } from '@/services/capacitor/preferences';
 import { deleteDocument, getDocument, increaseDocument, setDocument } from '@/services/firebase/firestore';
 import { parse } from '@/services/parser';
+import { match } from '@/services/regex';
 import { encode } from '@/services/sqids';
 import { useAppStore } from '@/stores/app';
 import { usePlaylistStore } from '@/stores/playlist';
@@ -101,9 +102,22 @@ export default {
       return index
     },
     async updateChannels(data: string) {
-      const playlist = parse.uLog(data)
+      const nameRegex = /(?:tvg-name=["]*)([^"]*)(?:["]*)/g
+      const logoRegex = /(?:tvg-logo=["]*)([^"]*)(?:["]*)/g
+      const groupRegex = /(?:group-title=["]*)([^"]*)(?:["]*)/g
+      const lines = data.split("\n")
+      const playlist: UPlayListItem[] = []
       await deleteFile.uLog(PLAYLIST).catch(() => { })
-      await writeFileObject.uLog(PLAYLIST, playlist.items.map(i => ({ line: i.line, url: i.url, name: i.name, group: i.group.title, img: i.tvg.logo } as UPlayListItem)))
+      for (let index = 1; index < lines.length; index += 2) {
+        const line = lines[index];
+        const url = lines[index + 1];
+        const name = match(nameRegex, line)[0][1]
+        const logo = match(logoRegex, line)[0][1]
+        const group = match(groupRegex, line)[0][1]
+        playlist.push({ line: index, url: url, name: name, group: group, img: logo })
+      }
+      writeFileObject(PLAYLIST, playlist)
+      return
     },
     async getUrl() {
       this.appStore.toast = "info"
